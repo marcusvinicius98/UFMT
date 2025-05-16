@@ -1,29 +1,38 @@
-name: Gerar PDFs com Playwright
+name: gerar-pdfs
 
 on:
-  workflow_dispatch:
+  push:
+    paths:
+      - scripts/gerar_pdfs.py
+      - .github/workflows/gerar_planos.yml
 
 jobs:
   gerar-pdfs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - name: Checkout do código
-      uses: actions/checkout@v3
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
 
-    - name: Instalar dependências do sistema e Python
-      run: |
-        sudo apt update
-        sudo apt install -y wget unzip xvfb
-        pip install playwright
-        playwright install chromium
+      - name: Instalar dependências
+        run: |
+          sudo apt update
+          sudo apt install -y wget unzip xvfb
+          pip install playwright
+          playwright install chromium
 
-    - name: Rodar script Python
-      run: |
-        xvfb-run --auto-servernum python3 scripts/gerar_pdfs.py
+      - name: Rodar script de geração de PDFs
+        run: |
+          xvfb-run --auto-servernum python3 scripts/gerar_pdfs.py
 
-    - name: Upload dos PDFs por semestre
-      uses: actions/upload-artifact@main
-      with:
-        name: planos-por-semestre
-        path: pdfs_planos/**/*.pdf
+      - name: Upload PDFs Individuais
+        uses: actions/upload-artifact@main
+        with:
+          name: planos-individuais
+          path: pdfs_planos/*.pdf
+
+      - name: Upload PDFs por Semestre
+        uses: actions/upload-artifact@main
+        with:
+          name: planos-agrupados
+          path: pdfs_planos/agrupados/*.pdf
