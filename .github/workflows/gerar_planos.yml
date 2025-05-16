@@ -26,4 +26,4 @@ jobs:
       uses: actions/upload-artifact@main
       with:
         name: planos-por-semestre
-        path: pdfs_planos/*.pdf
+        path: pdfs_planos/**/*.pdf
