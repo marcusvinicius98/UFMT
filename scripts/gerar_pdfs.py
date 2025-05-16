@@ -1,12 +1,9 @@
 import os
-import re
 import asyncio
-from pathlib import Path
-from urllib.parse import urlparse, parse_qs
 from playwright.async_api import async_playwright
 
-# Lista de URLs dos planos
-LINKS  = [
+# Lista de URLs dos planos de ensino
+urls = [
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10924582&turma=FB&periodo=20161",
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10827340&turma=FB&periodo=20161",
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10829914&turma=FB&periodo=20161",
@@ -41,37 +38,47 @@ LINKS  = [
 ]
 
 
-def extrair_periodo_da_url(url):
-    qs = parse_qs(urlparse(url).query)
-    return qs.get('periodo', ['Desconhecido'])[0]
-
-async def gerar_pdfs():
-    output_dir = Path("pdfs_planos")
-    output_dir.mkdir(exist_ok=True)
-
+async def salvar_planos():
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch()
         context = await browser.new_context()
         page = await context.new_page()
 
-        for link in LINKS:
-            print(f"Acessando: {link}")
+        for url in urls:
+            print(f"Acessando: {url}")
+            await page.goto(url)
+
+            # Extrair período do parâmetro da URL
             try:
-                await page.goto(link, timeout=60000)
-                await page.wait_for_selector("input[value='Imprimir']", timeout=15000)
+                periodo = url.split("periodo=")[-1]
+                semestre = f"{periodo[:4]}_{periodo[-1]}"
+            except Exception:
+                print(f"Não foi possível extrair o período de {url}")
+                continue
 
-                periodo = extrair_periodo_da_url(link)
-                pdf_dir = output_dir / periodo
-                pdf_dir.mkdir(parents=True, exist_ok=True)
+            # Esperar nome da disciplina carregar
+            try:
+                await page.wait_for_selector("span.card-title", timeout=5000)
+                titulo_element = await page.query_selector("span.card-title")
+                titulo_texto = await titulo_element.inner_text()
+                nome_disciplina = titulo_texto.split("#")[0].strip()
+                nome_disciplina_limpo = "".join(c for c in nome_disciplina if c.isalnum() or c in (" ", "-")).replace(" ", "_")
+            except Exception:
+                print(f"Não foi possível extrair o nome da disciplina de {url}")
+                continue
 
-                codigo_match = re.search(r"codigo=(\d+)", link)
-                codigo = codigo_match.group(1) if codigo_match else "sem_codigo"
+            # Criar diretório do semestre
+            pasta_semestre = f"pdfs_planos/{semestre}"
+            os.makedirs(pasta_semestre, exist_ok=True)
 
-                await page.pdf(path=str(pdf_dir / f"{codigo}.pdf"), format="A4")
-            except Exception as e:
-                print(f"Erro ao processar {link}: {e}")
+            # Caminho final do PDF
+            path_pdf = os.path.join(pasta_semestre, f"{nome_disciplina_limpo}.pdf")
+
+            # Gerar PDF
+            await page.pdf(path=path_pdf, format="A4")
+            print(f"Salvo em: {path_pdf}")
 
         await browser.close()
 
 if __name__ == "__main__":
-    asyncio.run(gerar_pdfs())
+    asyncio.run(salvar_planos())
