@@ -1,38 +1,43 @@
 name: gerar-pdfs
 
 on:
-  workflow_dispatch:  # permite execução manual na aba "Actions"
-  push:
-    paths:
-      - scripts/gerar_pdfs.py
-      - .github/workflows/gerar_planos.yml
+  workflow_dispatch:
 
 jobs:
   gerar-pdfs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v3
 
-      - name: Instalar dependências
+      - name: Instalar dependências do sistema
         run: |
           sudo apt update
           sudo apt install -y wget unzip xvfb
+
+      - name: Instalar Playwright
+        run: |
           pip install playwright
           playwright install chromium
 
-      - name: Executar script
+      - name: Executar script para gerar PDFs
         run: xvfb-run --auto-servernum python3 scripts/gerar_pdfs.py
 
       - name: Upload PDFs individuais
         uses: actions/upload-artifact@main
         with:
           name: planos-individuais
-          path: pdfs_planos/*.pdf
+          path: pdfs_planos/**/*.pdf
+          if-no-files-found: warn
+          compression-level: 6
+          overwrite: false
 
-      - name: Upload PDFs agrupados por semestre
+      - name: Upload PDFs agrupados
         uses: actions/upload-artifact@main
         with:
           name: planos-agrupados
-          path: pdfs_planos/agrupados/*.pdf
+          path: pdfs_planos/agrupados/**/*.pdf
+          if-no-files-found: warn
+          compression-level: 6
+          overwrite: false
