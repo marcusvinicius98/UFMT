@@ -1,4 +1,4 @@
-name: gerar-pdfs
+name: Gerar PDFs UFMT
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do repositório
+      - name: Checkout do código
         uses: actions/checkout@v3
 
       - name: Instalar dependências do sistema
@@ -16,28 +16,24 @@ jobs:
           sudo apt update
           sudo apt install -y wget unzip xvfb
 
-      - name: Instalar Playwright
+      - name: Instalar bibliotecas Python
         run: |
-          pip install playwright
+          pip install playwright PyPDF2
           playwright install chromium
 
       - name: Executar script para gerar PDFs
         run: xvfb-run --auto-servernum python3 scripts/gerar_pdfs.py
 
-      - name: Upload PDFs individuais
+      - name: Upload PDFs Individuais
         uses: actions/upload-artifact@main
         with:
           name: planos-individuais
           path: pdfs_planos/**/*.pdf
           if-no-files-found: warn
-          compression-level: 6
-          overwrite: false
 
-      - name: Upload PDFs agrupados
+      - name: Upload PDFs Agrupados
         uses: actions/upload-artifact@main
         with:
           name: planos-agrupados
           path: pdfs_planos/agrupados/**/*.pdf
           if-no-files-found: warn
-          compression-level: 6
-          overwrite: false
