@@ -1,12 +1,7 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-import os
-import time
-import base64
-import json
+import asyncio
+from playwright.async_api import async_playwright
 import re
 from pathlib import Path
-from PyPDF2 import PdfMerger
 
 links = [
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10924582&turma=FB&periodo=20161",
@@ -42,63 +37,32 @@ links = [
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10829922&turma=FB&periodo=20201"
 ]
 
-output_dir = Path("pdfs_planos")
-output_dir.mkdir(exist_ok=True)
+async def main():
+    output_dir = Path("pdfs_planos")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-options = Options()
-options.add_argument('--headless')
-options.add_argument('--disable-gpu')
-options.add_argument('--no-sandbox')
-options.add_argument('--print-to-pdf')
-options.add_argument('--disable-dev-shm-usage')
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        context = await browser.new_context()
 
-for url in links:
-    match = re.search(r'periodo=(\d{6})', url)
-    if not match:
-        continue
-    periodo = match.group(1)
-    semestre = f"{periodo[:4]}_{periodo[4:]}"
-    folder = output_dir / semestre
-    folder.mkdir(parents=True, exist_ok=True)
+        for url in links:
+            match = re.search(r'periodo=(\d{6})', url)
+            if not match:
+                continue
+            periodo = match.group(1)
+            semestre = f"{periodo[:4]}_{periodo[4:]}"
+            folder = output_dir / semestre
+            folder.mkdir(parents=True, exist_ok=True)
+            codigo = url.split("codigo=")[-1].split("&")[0]
+            file_path = folder / f"{codigo}.pdf"
 
-    filename = folder / (url.split("codigo=")[-1].split("&")[0] + ".pdf")
+            page = await context.new_page()
+            await page.goto(url)
+            await page.wait_for_timeout(5000)
+            await page.pdf(path=str(file_path), format="A4", print_background=True)
+            print(f"Salvo: {file_path}")
+            await page.close()
 
-    pdf_path = "/tmp/output.pdf"
-    prefs = {
-        "printing.print_preview_sticky_settings.appState": json.dumps({
-            "version": 2,
-            "isHeaderFooterEnabled": False,
-            "marginsType": 1,
-            "mediaSize": {},
-            "scalingType": 3,
-            "scaling": "100",
-            "isLandscapeEnabled": False,
-            "isCssBackgroundEnabled": True
-        }),
-        "savefile.default_directory": str(folder.absolute())
-    }
+        await browser.close()
 
-    options.add_experimental_option("prefs", prefs)
-    options.add_argument('--kiosk-printing')
-
-    driver = webdriver.Chrome(options=options)
-    driver.get(url)
-    time.sleep(5)
-
-    driver.execute_script('window.print();')
-    time.sleep(5)
-    driver.quit()
-
-    os.rename("/tmp/output.pdf", filename)
-
-for semester_folder in output_dir.iterdir():
-    if semester_folder.is_dir():
-        pdfs = list(semester_folder.glob("*.pdf"))
-        if not pdfs:
-            continue
-        merger = PdfMerger()
-        for pdf in pdfs:
-            merger.append(str(pdf))
-        merged_pdf = output_dir / f"{semester_folder.name}.pdf"
-        merger.write(str(merged_pdf))
-        merger.close()
+asyncio.run(main())
