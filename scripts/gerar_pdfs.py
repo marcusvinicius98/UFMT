@@ -1,7 +1,7 @@
 import asyncio
+from pathlib import Path
 from playwright.async_api import async_playwright
 import re
-from pathlib import Path
 
 links = [
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10924582&turma=FB&periodo=20161",
@@ -46,8 +46,10 @@ async def main():
         context = await browser.new_context()
 
         for url in links:
-            match = re.search(r'periodo=(\d{6})', url)
+            print(f"Acessando: {url}")
+            match = re.search(r"periodo=(\d{6})", url)
             if not match:
+                print(f"Não foi possível extrair o período de {url}")
                 continue
             periodo = match.group(1)
             semestre = f"{periodo[:4]}_{periodo[4:]}"
@@ -57,11 +59,16 @@ async def main():
             file_path = folder / f"{codigo}.pdf"
 
             page = await context.new_page()
-            await page.goto(url)
-            await page.wait_for_timeout(5000)
-            await page.pdf(path=str(file_path), format="A4", print_background=True)
-            print(f"Salvo: {file_path}")
-            await page.close()
+            try:
+                await page.goto(url, timeout=60000)
+                await page.wait_for_load_state("networkidle")
+                await asyncio.sleep(2)
+                await page.pdf(path=str(file_path), format="A4", print_background=True)
+                print(f"✅ PDF salvo: {file_path}")
+            except Exception as e:
+                print(f"❌ Erro ao processar {url}: {e}")
+            finally:
+                await page.close()
 
         await browser.close()
 
