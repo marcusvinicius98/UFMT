@@ -6,7 +6,7 @@ from urllib.parse import urlparse, parse_qs
 from playwright.async_api import async_playwright
 
 # Lista de URLs dos planos
-links = [
+LINKS  = [
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10924582&turma=FB&periodo=20161",
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10827340&turma=FB&periodo=20161",
     "https://academico-siga.ufmt.br/ufmt.portalacademico/PlanoEnsino/Details?codigo=10829914&turma=FB&periodo=20161",
