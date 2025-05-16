@@ -31,7 +31,7 @@ jobs:
         xvfb-run --auto-servernum python3 scripts/gerar_pdfs.py
 
     - name: Upload dos PDFs por semestre
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@main
       with:
         name: planos-por-semestre
         path: pdfs_planos/*.pdf
