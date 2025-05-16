@@ -82,3 +82,25 @@ async def salvar_planos():
 
 if __name__ == "__main__":
     asyncio.run(salvar_planos())
+
+from pathlib import Path
+from PyPDF2 import PdfMerger
+
+def agrupar_pdfs_por_semestre():
+    agrupados_dir = Path("pdfs_planos/agrupados")
+    agrupados_dir.mkdir(parents=True, exist_ok=True)
+
+    for semestre_dir in Path("pdfs_planos").iterdir():
+        if semestre_dir.is_dir() and semestre_dir.name != "agrupados":
+            merger = PdfMerger()
+            pdfs = sorted(semestre_dir.glob("*.pdf"))
+            if pdfs:
+                for pdf_file in pdfs:
+                    merger.append(str(pdf_file))
+                output_path = agrupados_dir / f"{semestre_dir.name}.pdf"
+                merger.write(str(output_path))
+                merger.close()
+                print(f"PDF agrupado salvo: {output_path}")
+
+# Chama a função após gerar os individuais
+agrupar_pdfs_por_semestre()
