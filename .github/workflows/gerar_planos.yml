@@ -1,6 +1,7 @@
 name: gerar-pdfs
 
 on:
+  workflow_dispatch:  # permite execução manual na aba "Actions"
   push:
     paths:
       - scripts/gerar_pdfs.py
@@ -21,17 +22,16 @@ jobs:
           pip install playwright
           playwright install chromium
 
-      - name: Rodar script de geração de PDFs
-        run: |
-          xvfb-run --auto-servernum python3 scripts/gerar_pdfs.py
+      - name: Executar script
+        run: xvfb-run --auto-servernum python3 scripts/gerar_pdfs.py
 
-      - name: Upload PDFs Individuais
-        uses: actions/upload-artifact@main
+      - name: Upload PDFs individuais
+        uses: actions/upload-artifact@v3
         with:
           name: planos-individuais
           path: pdfs_planos/*.pdf
 
-      - name: Upload PDFs por Semestre
+      - name: Upload PDFs agrupados por semestre
         uses: actions/upload-artifact@main
         with:
           name: planos-agrupados
