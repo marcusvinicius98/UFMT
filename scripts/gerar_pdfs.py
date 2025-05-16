@@ -1,6 +1,8 @@
 import os
 import asyncio
 from playwright.async_api import async_playwright
+from pathlib import Path
+from PyPDF2 import PdfMerger
 
 # Lista de URLs dos planos de ensino
 urls = [
@@ -83,8 +85,6 @@ async def salvar_planos():
 if __name__ == "__main__":
     asyncio.run(salvar_planos())
 
-from pathlib import Path
-from PyPDF2 import PdfMerger
 
 def agrupar_pdfs_por_semestre():
     agrupados_dir = Path("pdfs_planos/agrupados")
